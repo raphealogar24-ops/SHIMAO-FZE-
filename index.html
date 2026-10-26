@@ -30,6 +30,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compat v9) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
         body { font-family: 'Inter', 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
         .modal-backdrop {
@@ -448,7 +453,7 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-base sm:text-lg leading-tight">Admin Management Portal</h3>
-                        <p class="text-[11px] text-slate-400">Manage products, pricing, WhatsApp, and credentials</p>
+                        <p class="text-[11px] text-slate-400">Manage products, pricing, WhatsApp, and credentials (Cloud Firebase)</p>
                     </div>
                 </div>
                 <button onclick="window.closeAdminModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-sm">
@@ -551,7 +556,7 @@
                             <!-- Image Preview Box -->
                             <div id="imagePreviewContainer" class="hidden flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-lg">
                                 <img id="adminProdImgPreview" src="" class="w-12 h-12 object-cover rounded border border-slate-200">
-                                <span class="text-[11px] text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Image encoded as string ready for storage!</span>
+                                <span class="text-[11px] text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Image encoded as string ready for Firebase!</span>
                             </div>
                         </div>
 
@@ -561,14 +566,14 @@
                         </div>
 
                         <div class="flex gap-2 pt-1">
-                            <button onclick="window.saveAdminProduct()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">Save Product</button>
+                            <button onclick="window.saveAdminProduct()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">Save Product to Cloud</button>
                             <button onclick="window.resetAdminProductForm()" id="adminCancelBtn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-lg text-xs font-bold transition hidden">Cancel</button>
                         </div>
                     </div>
 
                     <!-- Product List Management -->
                     <div>
-                        <h4 class="font-bold text-xs text-slate-900 mb-2">Manage Current Products</h4>
+                        <h4 class="font-bold text-xs text-slate-900 mb-2">Manage Current Products (Cloud Sync)</h4>
                         <div id="adminProductList" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
                     </div>
                 </div>
@@ -578,6 +583,20 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        // Initialize Firebase with your project credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHomMCKmqyL2_opbQE_YRuN9R-HlvjihQ",
+            authDomain: "shimao-fze.firebaseapp.com",
+            projectId: "shimao-fze",
+            storageBucket: "shimao-fze.firebasestorage.app",
+            messagingSenderId: "879486962618",
+            appId: "1:879486962618:web:b7effcde143cf74558eb83",
+            measurementId: "G-8Y0W2NJVV7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         document.getElementById('year').textContent = new Date().getFullYear();
 
         let adminUsername = localStorage.getItem('shimao_admin_user') || "admin";
@@ -653,9 +672,25 @@
             }
         ];
 
-        let products = JSON.parse(localStorage.getItem('shimao_products')) || defaultProducts;
+        let products = [];
         let currentCategoryFilter = 'all';
         let calcMode = 'area';
+
+        // Realtime sync with Firebase Database
+        db.ref('products').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                products = data;
+            } else {
+                // Seed default products if database is empty
+                db.ref('products').set(defaultProducts);
+                products = defaultProducts;
+            }
+            window.renderProducts();
+            if (typeof window.renderAdminProductList === 'function') {
+                window.renderAdminProductList();
+            }
+        });
 
         window.formatNaira = function(amount) {
             return "₦" + Number(amount).toLocaleString('en-NG');
@@ -913,7 +948,7 @@
             alert("WhatsApp contact number updated successfully.");
         };
 
-        /* Convert Uploaded Image File to Base64 String for Firebase/Database Storage */
+        /* Convert Uploaded Image File to Base64 String for Firebase Cloud Storage */
         window.handleImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -923,7 +958,6 @@
                 const base64String = e.target.result;
                 document.getElementById('adminProdImage').value = base64String;
                 
-                // Show visual preview confirmation
                 const previewImg = document.getElementById('adminProdImgPreview');
                 const previewContainer = document.getElementById('imagePreviewContainer');
                 if (previewImg && previewContainer) {
@@ -982,11 +1016,13 @@
                 products.push(newP);
             }
 
-            localStorage.setItem('shimao_products', JSON.stringify(products));
-            window.resetAdminProductForm();
-            window.renderProducts();
-            window.renderAdminProductList();
-            alert("Product saved successfully.");
+            // Save to Firebase Realtime Database
+            db.ref('products').set(products).then(() => {
+                window.resetAdminProductForm();
+                alert("Product saved successfully to Firebase Cloud!");
+            }).catch((err) => {
+                alert("Error saving to Firebase: " + err.message);
+            });
         };
 
         window.editAdminProduct = function(id) {
@@ -1026,11 +1062,14 @@
         };
 
         window.deleteAdminProduct = function(id) {
-            if (!confirm("Are you sure you want to delete this product?")) return;
+            if (!confirm("Are you sure you want to delete this product from the cloud?")) return;
             products = products.filter(p => p.id !== id);
-            localStorage.setItem('shimao_products', JSON.stringify(products));
-            window.renderProducts();
-            window.renderAdminProductList();
+            
+            // Update Firebase Realtime Database
+            db.ref('products').set(products).then(() => {
+                window.renderProducts();
+                window.renderAdminProductList();
+            });
         };
 
         // Keyboard Shortcut for Admin Portal (Ctrl+Shift+A or Cmd+Shift+A)
@@ -1040,9 +1079,6 @@
                 window.openAdminModal();
             }
         });
-
-        // Initial render on load
-        window.renderProducts();
     </script>
 </body>
 </html>
