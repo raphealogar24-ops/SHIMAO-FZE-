@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta name="google-site-verification" content="jTSyB3CxrSeKemTwnPGcdw2vBFBAo-b9IItlhiGhRtw" />
@@ -602,9 +602,22 @@
 
         document.getElementById('year').textContent = new Date().getFullYear();
 
-        let whatsappNumber = localStorage.getItem('shimao_whatsapp') || "2348001234567";
-        document.getElementById('adminWhatsappNumber').value = whatsappNumber;
-        document.getElementById('footerPhoneDisplay').textContent = "+" + whatsappNumber;
+        let whatsappNumber = "2348001234567"; // Fallback default
+
+        // Realtime sync for WhatsApp contact number from Firebase Cloud
+        db.ref('settings/whatsapp').on('value', (snapshot) => {
+            const savedNum = snapshot.val();
+            if (savedNum) {
+                whatsappNumber = savedNum;
+            }
+            const footerDisplay = document.getElementById('footerPhoneDisplay');
+            if (footerDisplay) footerDisplay.textContent = "+" + whatsappNumber;
+            
+            const adminInput = document.getElementById('adminWhatsappNumber');
+            if (adminInput && document.activeElement !== adminInput) {
+                adminInput.value = whatsappNumber;
+            }
+        });
 
         const defaultProducts = [
             {
@@ -949,12 +962,23 @@
         };
 
         window.saveAdminSettings = function() {
-            const num = document.getElementById('adminWhatsappNumber').value.trim();
-            if (!num) return alert("Please enter valid phone number.");
-            whatsappNumber = num;
-            localStorage.setItem('shimao_whatsapp', num);
-            document.getElementById('footerPhoneDisplay').textContent = "+" + whatsappNumber;
-            alert("WhatsApp contact number updated successfully.");
+            const numInput = document.getElementById('adminWhatsappNumber');
+            if (!numInput) return;
+            
+            // Clean number input (strip out +, spaces, dashes)
+            const cleanedNum = numInput.value.replace(/[^0-9]/g, '');
+
+            if (!cleanedNum || cleanedNum.length < 10) {
+                return alert("Please enter a valid phone number with country code (e.g., 2348001234567).");
+            }
+
+            db.ref('settings/whatsapp').set(cleanedNum)
+                .then(() => {
+                    alert("WhatsApp contact number updated live across all devices!");
+                })
+                .catch((err) => {
+                    alert("Error saving WhatsApp number: " + err.message);
+                });
         };
 
         /* Convert & Compress Uploaded Image File via Canvas for Firebase Storage */
