@@ -33,6 +33,7 @@
     
     <!-- Firebase SDKs (Compat v9) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
@@ -453,7 +454,7 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-base sm:text-lg leading-tight">Admin Management Portal</h3>
-                        <p class="text-[11px] text-slate-400">Manage products, pricing, WhatsApp, and credentials (Cloud Firebase)</p>
+                        <p class="text-[11px] text-slate-400">Manage products, pricing, and WhatsApp settings (Firebase Auth & Cloud Sync)</p>
                     </div>
                 </div>
                 <button onclick="window.closeAdminModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-sm">
@@ -468,39 +469,40 @@
                         <i class="fa-solid fa-key"></i>
                     </div>
                     <h4 class="font-bold text-base text-slate-900">Admin Login</h4>
-                    <p class="text-xs text-slate-500">Sign in with your admin credentials to access settings.</p>
+                    <p class="text-xs text-slate-500">Sign in with your Firebase Auth email & password.</p>
                     <div class="space-y-2 pt-2 text-left">
                         <div>
-                            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Username</label>
-                            <input type="text" id="adminUsernameInput" placeholder="Username..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brandBlue">
+                            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Admin Email</label>
+                            <input type="email" id="adminUsernameInput" placeholder="admin@shimao.com" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brandBlue">
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Password</label>
                             <input type="password" id="adminPasswordInput" placeholder="Password..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brandBlue">
                         </div>
-                        <button onclick="window.verifyAdminCredentials()" class="w-full bg-brandBlue text-white py-2.5 rounded-xl font-bold text-xs shadow mt-2">Login</button>
+                        <button onclick="window.verifyAdminCredentials()" class="w-full bg-brandBlue text-white py-2.5 rounded-xl font-bold text-xs shadow mt-2">Login with Firebase</button>
                     </div>
                 </div>
 
                 <!-- Admin Dashboard (Visible after login) -->
                 <div id="adminDashboard" class="space-y-5 hidden">
-                    <!-- WhatsApp & Admin Credentials Config -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                                <i class="fa-solid fa-gear text-brandBlue"></i> WhatsApp Contact Settings
-                            </h4>
-                            <input type="text" id="adminWhatsappNumber" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs" placeholder="e.g. 2348001234567">
-                            <button onclick="window.saveAdminSettings()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Save WhatsApp Number</button>
-                        </div>
+                    <!-- WhatsApp & Logout Header Strip -->
+                    <div class="flex items-center justify-between bg-slate-100 p-3 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i> Authenticated as Admin
+                        </span>
+                        <button onclick="window.adminLogout()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                        </button>
+                    </div>
 
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                                <i class="fa-solid fa-user-shield text-amber-600"></i> Change Admin Credentials
-                            </h4>
-                            <input type="text" id="newAdminUsername" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs" placeholder="New Username">
-                            <input type="password" id="newAdminPassword" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs" placeholder="New Password">
-                            <button onclick="window.updateAdminCredentials()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Update Login Details</button>
+                    <!-- WhatsApp Settings Config -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-gear text-brandBlue"></i> WhatsApp Contact Settings
+                        </h4>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="adminWhatsappNumber" class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs" placeholder="e.g. 2348001234567">
+                            <button onclick="window.saveAdminSettings()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Save Number</button>
                         </div>
                     </div>
 
@@ -545,18 +547,18 @@
                             </div>
                         </div>
 
-                        <!-- Product Image Upload & Base64 String Preview -->
+                        <!-- Product Image Upload & Canvas Base64 Auto-Compressor -->
                         <div class="space-y-2">
                             <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Product Image (File Upload or URL string)</label>
                             <div class="flex flex-col sm:flex-row gap-2 items-center">
                                 <input type="file" id="adminProdFileInput" accept="image/*" onchange="window.handleImageUpload(event)" class="w-full sm:w-1/2 text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer">
                                 <span class="text-xs text-slate-400 font-bold">OR</span>
-                                <input type="text" id="adminProdImage" placeholder="Image URL / Base64 string..." class="w-full sm:w-1/2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+                                <input type="text" id="adminProdImage" placeholder="Image URL / Compressed string..." class="w-full sm:w-1/2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                             </div>
                             <!-- Image Preview Box -->
                             <div id="imagePreviewContainer" class="hidden flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-lg">
                                 <img id="adminProdImgPreview" src="" class="w-12 h-12 object-cover rounded border border-slate-200">
-                                <span class="text-[11px] text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Image encoded as string ready for Firebase!</span>
+                                <span class="text-[11px] text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Image compressed and encoded for Firebase!</span>
                             </div>
                         </div>
 
@@ -596,11 +598,9 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
 
         document.getElementById('year').textContent = new Date().getFullYear();
-
-        let adminUsername = localStorage.getItem('shimao_admin_user') || "admin";
-        let adminPassword = localStorage.getItem('shimao_admin_pwd') || "ChangeThisPassword123!";
 
         let whatsappNumber = localStorage.getItem('shimao_whatsapp') || "2348001234567";
         document.getElementById('adminWhatsappNumber').value = whatsappNumber;
@@ -689,6 +689,18 @@
             window.renderProducts();
             if (typeof window.renderAdminProductList === 'function') {
                 window.renderAdminProductList();
+            }
+        });
+
+        // Monitor Firebase Auth State
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('adminLoginGate').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                window.renderAdminProductList();
+            } else {
+                document.getElementById('adminDashboard').classList.add('hidden');
+                document.getElementById('adminLoginGate').classList.remove('hidden');
             }
         });
 
@@ -912,31 +924,28 @@
             window.closeNegotiationModal();
         };
 
-        /* Admin Portal Management */
+        /* Firebase Auth Credentials Verification */
         window.verifyAdminCredentials = function() {
-            const user = document.getElementById('adminUsernameInput').value.trim();
+            const email = document.getElementById('adminUsernameInput').value.trim();
             const pwd = document.getElementById('adminPasswordInput').value;
-            if (user === adminUsername && pwd === adminPassword) {
-                document.getElementById('adminLoginGate').classList.add('hidden');
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                document.getElementById('newAdminUsername').value = adminUsername;
-                window.renderAdminProductList();
-            } else {
-                alert("Incorrect username or password.");
+
+            if (!email || !pwd) {
+                return alert("Please enter both email and password.");
             }
+
+            auth.signInWithEmailAndPassword(email, pwd)
+                .then((userCredential) => {
+                    alert("Signed in successfully with Firebase Auth!");
+                })
+                .catch((error) => {
+                    alert("Firebase Login Failed: " + error.message);
+                });
         };
 
-        window.updateAdminCredentials = function() {
-            const newUser = document.getElementById('newAdminUsername').value.trim();
-            const newPwd = document.getElementById('newAdminPassword').value;
-            if (!newUser || !newPwd) {
-                return alert("Username and password cannot be empty.");
-            }
-            adminUsername = newUser;
-            adminPassword = newPwd;
-            localStorage.setItem('shimao_admin_user', newUser);
-            localStorage.setItem('shimao_admin_pwd', newPwd);
-            alert("Admin username and password updated successfully!");
+        window.adminLogout = function() {
+            auth.signOut().then(() => {
+                alert("Logged out successfully.");
+            });
         };
 
         window.saveAdminSettings = function() {
@@ -948,22 +957,50 @@
             alert("WhatsApp contact number updated successfully.");
         };
 
-        /* Convert Uploaded Image File to Base64 String for Firebase Cloud Storage */
+        /* Convert & Compress Uploaded Image File via Canvas for Firebase Storage */
         window.handleImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const base64String = e.target.result;
-                document.getElementById('adminProdImage').value = base64String;
-                
-                const previewImg = document.getElementById('adminProdImgPreview');
-                const previewContainer = document.getElementById('imagePreviewContainer');
-                if (previewImg && previewContainer) {
-                    previewImg.src = base64String;
-                    previewContainer.classList.remove('hidden');
-                }
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    document.getElementById('adminProdImage').value = compressedBase64;
+                    
+                    const previewImg = document.getElementById('adminProdImgPreview');
+                    const previewContainer = document.getElementById('imagePreviewContainer');
+                    if (previewImg && previewContainer) {
+                        previewImg.src = compressedBase64;
+                        previewContainer.classList.remove('hidden');
+                    }
+                };
             };
             reader.readAsDataURL(file);
         };
